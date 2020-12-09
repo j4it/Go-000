@@ -56,6 +56,7 @@ func main() {
 	if err := g.Wait(); err != nil {
 		fmt.Println("errgroup done: ", err)
 	}
+	os.Exit(0)
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
