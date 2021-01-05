@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -24,6 +25,7 @@ func main() {
 		Handler: mux,
 	}
 	g, ctx := errgroup.WithContext(context.Background())
+	//	done := make(chan struct{})
 	g.Go(func() error {
 		go func() {
 			if err := srv.ListenAndServe(); err != nil {
@@ -32,7 +34,11 @@ func main() {
 		}()
 		select {
 		case <-ctx.Done():
-			fmt.Println("shutting down server...")
+			defer func() {
+				//				close(done)
+				fmt.Println("shutting down server...")
+			}()
+			time.Sleep(5 * time.Second)
 			return srv.Shutdown(ctx)
 		}
 	})
@@ -45,18 +51,25 @@ func main() {
 
 			fmt.Println("get a signal:", s.String())
 			switch s {
-			case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-				return fmt.Errorf("graceful!")
-			case syscall.SIGHUP:
+			case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP:
+				return fmt.Errorf("SIG:%s, start to shutdown srv", s.String())
 			default:
-				return fmt.Errorf("rude!")
+				fmt.Println("got SIG:%s", s.String())
 			}
 		}
 	})
 	if err := g.Wait(); err != nil {
-		fmt.Println("errgroup done: ", err)
+		fmt.Println("errgroup got err: ", err)
 	}
-	os.Exit(0)
+
+	//	<-done
+	fmt.Println("close all")
+}
+
+func newSrv(done chan struct{}) {}
+
+func handleSignal(done chan struct{}) {
+
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
